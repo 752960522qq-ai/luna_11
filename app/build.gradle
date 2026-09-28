@@ -14,30 +14,17 @@ android {
 
 def cardArtOutput = file('src/main/assets/card-art')
 tasks.register('unpackCardArt') {
-    def htmlFile = file('src/main/assets/index.html')
-    inputs.file(htmlFile)
+    def imageNames = ['infantry', 'airstrike', 'medium', 'atgm', 'scout', 'heavy']
+    def sourceFiles = imageNames.collect { file("src/main/assets/card-art-data/${it}.txt") }
+    inputs.files(sourceFiles)
     outputs.dir(cardArtOutput)
     doLast {
-        def source = htmlFile.getText('UTF-8')
-        def dataStart = source.indexOf('const suppliedCardArtData=')
-        def dataEnd = source.indexOf(';', dataStart)
-        if (dataStart < 0 || dataEnd < 0) throw new GradleException('Bundled card artwork data was not found')
-        def dataSource = source.substring(dataStart, dataEnd)
-        def required = ['infantry', 'airstrike', 'medium', 'atgm', 'scout', 'heavy']
-        def art = [:]
-        required.each { name ->
-            def marker = "\"${name}\":\""
-            def valueStart = dataSource.indexOf(marker)
-            if (valueStart < 0) throw new GradleException("Missing bundled card artwork: ${name}")
-            valueStart += marker.length()
-            def valueEnd = dataSource.indexOf('"', valueStart)
-            if (valueEnd < 0) throw new GradleException("Unterminated bundled card artwork: ${name}")
-            art[name] = dataSource.substring(valueStart, valueEnd)
-        }
         cardArtOutput.mkdirs()
-        art.each { name, encoded ->
+        imageNames.each { name ->
+            def sourceFile = file("src/main/assets/card-art-data/${name}.txt")
+            if (!sourceFile.exists()) throw new GradleException("Missing bundled card artwork: ${name}")
             try {
-                def bytes = java.util.Base64.getDecoder().decode(encoded)
+                def bytes = java.util.Base64.getDecoder().decode(sourceFile.getText('UTF-8').trim())
                 new File(cardArtOutput, "${name}.jpg").bytes = bytes
             } catch (IllegalArgumentException error) {
                 throw new GradleException("Invalid Base64 card image: ${name}", error)
