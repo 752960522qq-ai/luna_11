@@ -14,7 +14,7 @@ android {
 
 def cardArtOutput = file('src/main/assets/card-art')
 tasks.register('unpackCardArt') {
-    def imageNames = ['infantry', 'airstrike', 'medium', 'atgm', 'scout', 'heavy']
+    def imageNames = ['infantry', 'airstrike', 'medium', 'atgm', 'scout', 'heavy', 'engineer', 'reinforcements', 'medkit', 'artillery']
     def sourceFiles = imageNames.collect { file("src/main/assets/card-art-data/${it}.txt") }
     inputs.files(sourceFiles)
     outputs.dir(cardArtOutput)
