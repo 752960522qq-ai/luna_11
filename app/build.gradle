@@ -19,9 +19,13 @@ tasks.register('unpackCardArt') {
     outputs.dir(cardArtOutput)
     doLast {
         def source = htmlFile.getText('UTF-8')
+        def dataStart = source.indexOf('const suppliedCardArtData=')
+        def dataEnd = source.indexOf(';', dataStart)
+        if (dataStart < 0 || dataEnd < 0) throw new GradleException('Bundled card artwork data was not found')
+        def dataSource = source.substring(dataStart, dataEnd)
         def required = ['infantry', 'airstrike', 'medium', 'atgm', 'scout', 'heavy'] as Set
         def art = [:]
-        def matcher = java.util.regex.Pattern.compile('"(infantry|airstrike|medium|atgm|scout|heavy)"\\s*:\\s*"([^"]+)"').matcher(source)
+        def matcher = java.util.regex.Pattern.compile('"(infantry|airstrike|medium|atgm|scout|heavy)"\\s*:\\s*"([^"]+)"').matcher(dataSource)
         while (matcher.find()) {
             art[matcher.group(1)] = matcher.group(2)
         }
