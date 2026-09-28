@@ -11,3 +11,22 @@ android {
         versionName '1.0'
     }
 }
+
+def cardArtOutput = file('src/main/assets/card-art')
+tasks.register('unpackCardArt') {
+    def htmlFile = file('src/main/assets/index.html')
+    inputs.file(htmlFile)
+    outputs.dir(cardArtOutput)
+    doLast {
+        def source = htmlFile.getText('UTF-8')
+        def matcher = source =~ /const suppliedCardArtData=(\{[^\n]*\});/
+        if (!matcher.find()) throw new GradleException('Card artwork data was not found in index.html')
+        def art = new groovy.json.JsonSlurper().parseText(matcher.group(1))
+        cardArtOutput.mkdirs()
+        art.each { name, encoded ->
+            def bytes = java.util.Base64.getDecoder().decode(encoded)
+            new File(cardArtOutput, "${name}.jpg").bytes = bytes
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn tasks.named('unpackCardArt') }
