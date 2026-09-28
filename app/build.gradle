@@ -19,13 +19,21 @@ tasks.register('unpackCardArt') {
     outputs.dir(cardArtOutput)
     doLast {
         def source = htmlFile.getText('UTF-8')
-        def matcher = source =~ /const suppliedCardArtData=(\{[^\n]*\});/
-        if (!matcher.find()) throw new GradleException('Card artwork data was not found in index.html')
-        def art = new groovy.json.JsonSlurper().parseText(matcher.group(1))
+        def required = ['infantry', 'airstrike', 'medium', 'atgm', 'scout', 'heavy'] as Set
+        def art = [:]
+        def matcher = (~/"(infantry|airstrike|medium|atgm|scout|heavy)"\s*:\s*"([A-Za-z0-9+\/=]+)"/).matcher(source)
+        while (matcher.find()) {
+            art[matcher.group(1)] = matcher.group(2)
+        }
+        if (art.keySet() != required) throw new GradleException("Expected six card artwork images, found: ${art.keySet()}")
         cardArtOutput.mkdirs()
         art.each { name, encoded ->
-            def bytes = java.util.Base64.getDecoder().decode(encoded)
-            new File(cardArtOutput, "${name}.jpg").bytes = bytes
+            try {
+                def bytes = java.util.Base64.getDecoder().decode(encoded)
+                new File(cardArtOutput, "${name}.jpg").bytes = bytes
+            } catch (IllegalArgumentException error) {
+                throw new GradleException("Invalid Base64 card image: ${name}", error)
+            }
         }
     }
 }
